@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RP EXAM | Hasov</title>
+<style>
+body{margin:0;font-family:Arial;background:#0f0f0f;color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:10px;box-sizing:border-box;}
+.box{width:100%;max-width:520px;background:#1c1c1c;padding:18px;margin:10px 0;border-radius:15px;text-align:center;box-shadow:0 0 20px rgba(0,0,0,0.5);}
+h2,h3{margin:10px 0;}
+#q{font-size:18px;margin:15px 0;word-wrap:break-word;overflow-wrap:break-word;}
+button{width:100%;padding:12px;margin:6px 0;border:none;border-radius:10px;background:#2b2b2b;color:white;font-size:15px;cursor:pointer;}
+button:hover{background:#3a3a3a;}
+input{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:none;box-sizing:border-box;}
+#timer{font-size:22px;margin:5px 0;}
+.green{color:#00ff88;}
+.red{color:#ff4d4d;}
+.hidden{display:none;}
+</style>
+</head>
+<body>
+
+<div class="box">
+<h2>🔥 Тест на пост администратора Hasov </h2>
+<input id="player" placeholder="Nickname">
+<button onclick="start()">START</button>
+<h3 id="timer"></h3>
+<h3 id="q"></h3>
+<div id="a"></div>
+<h3 id="r"></h3>
+<input id="customMsg" placeholder="Доп. сообщение (по желанию)">
+</div>
+
+<div class="box">
+<h2>🔐 ADMIN PANEL</h2>
+<input id="adminPass" type="password" placeholder="Пароль">
+<button onclick="adminLogin()">LOGIN</button>
+<div id="adminPanel" class="hidden">
+<h3>Игроки и результаты</h3>
+<div id="history"></div>
+<button onclick="clearAll()">RESET</button>
+</div>
+</div>
+
+<script>
+
+// ====== TELEGRAM CONFIG ======
+const TELEGRAM_TOKEN = "8786449985:AAGFp4xRsoab0QfKR_ognnHOnCWcigFU-s0";
+const TELEGRAM_CHAT_ID = "-1003569688476";
+
+// ====== ВОПРОСЫ ======
+const bank = [
+{q:"DM — это?",a:["Убийство без IC причины","РП дуэль","Случайный разговор"],c:0},
+{q:"MG означает:",a:["Использование OOC информации в IC","РП стиль","Игровой чат"],c:0},
+{q:"RK — это:",a:["Возврат к месту смерти для мести","РП восстановление","Телепорт персонажа"],c:0},
+{q:"SK — это:",a:["Убийство на спавне","РП зона","Игровой диалог"],c:0},
+{q:"TK — это:",a:["Убийство союзников","Убийство NPC","РП помощь"],c:0},
+{q:"PG — это:",a:["Нереалистичное поведение без страха","РП бой","Тактика"],c:0},
+{q:"NRP означает:",a:["Нарушение RP логики","РП поведение","Обычная игра"],c:0},
+{q:"IC информация:",a:["Информация внутри игры","Discord чат","Реальная жизнь"],c:0},
+{q:"OOC информация:",a:["Вне игрового мира","Игровой чат","РП информация"],c:0},
+{q:"FRP — это:",a:["Нарушение логики RP","Обычный бой","Чат"],c:0},
+{q:"FearRP означает:",a:["Игрок обязан бояться за жизнь","Игнор угроз","РП стиль"],c:0},
+{q:"PowerGaming — это:",a:["Нереальные действия без шансов","РП бой","Реализм"],c:0},
+{q:"Metagaming — это:",a:["Использование внешней информации","РП стиль","IC логика"],c:0},
+{q:"RP смерть:",a:["Полная потеря персонажа","Респавн","Возврат"],c:0},
+{q:"Злоупотребление RP:",a:["Нереалистичные действия","РП игра","Работа"],c:0},
+{q:"Можно ли убивать без причины?",a:["Нет","Да","Иногда"],c:0},
+{q:"Можно ли использовать баги?",a:["Нет","Да","Иногда"],c:0},
+{q:"Что будет за DM?",a:["Наказание сервера","Награда","Игнор"],c:0},
+{q:"Что такое IC конфликт?",a:["Игровой конфликт","Discord спор","Реальная ссора"],c:0},
+{q:"Что такое NonRP?",a:["Нереалистичное поведение","РП стиль","Чат"],c:0},
+{q:"Что такое RDM?",a:["Убийство без причины","РП миссия","Дуэль"],c:0},
+{q:"Что такое VDM?",a:["Убийство транспортом","РП гонка","Чат"],c:0},
+{q:"Можно ли возвращаться после смерти?",a:["Нет (RK правило)","Да","Иногда"],c:0},
+{q:"Что такое spawn kill?",a:["Убийство на спавне","РП зона","Чат"],c:0},
+{q:"Что такое Green Zone?",a:["Зона без PvP","Зона боя","РП чат"],c:0},
+{q:"Что запрещено в Green Zone?",a:["Убийства","Разговор","Работа"],c:0},
+{q:"Что такое RP логика?",a:["Реалистичное поведение","Случайные действия","Читы"],c:0},
+{q:"Что такое OOC чат?",a:["Внеигровой чат","РП чат","Игровой диалог"],c:0},
+{q:"Что такое IC чат?",a:["Игровой чат","Discord","Вне игры"],c:0},
+{q:"Можно ли MG?",a:["Нет","Да","Иногда"],c:0},
+{q:"Что такое FearRP при оружии?",a:["Подчинение угрозе","Атака всегда","Игнор"],c:0},
+{q:"Что такое нарушение RP?",a:["Нереалистичные действия","Обычный бой","Работа"],c:0},
+{q:"Что такое RP режим?",a:["Игровая реальность персонажа","Аркада","Чат"],c:0},
+{q:"Что такое админ вмешательство?",a:["Контроль нарушений","Игровой бой","РП диалог"],c:0},
+{q:"Что такое правило сервера?",a:["Обязательное соблюдение","Рекомендация","Совет"],c:0},
+{q:"Что будет за TK?",a:["Наказание","Награда","Игнор"],c:0},
+{q:"Что такое RP причина?",a:["Логичное объяснение действия","Случайность","Чат"],c:0},
+{q:"Что такое нон-РП поведение?",a:["Нарушение реализма","РП игра","Работа"],c:0},
+{q:"Что такое адекватное поведение в RP?",a:["Реалистичные действия","Спам","Баги"],c:0},
+{q:"Что такое выход из RP?",a:["Остановка роли без причины","РП переход","Чат"],c:0},
+{q:"Можно ли нарушать правила ради выгоды?",a:["Нет","Да","Иногда"],c:0},
+{q:"Что такое честный RP бой?",a:["Без читов и багов","Любой бой","Спам"],c:0},
+{q:"Что такое запрещённый стиль игры?",a:["Нарушение правил","РП стиль","Тактика"],c:0},
+{q:"Что такое игровая смерть?",a:["Потеря персонажа в RP","Респавн","Телепорт"],c:0},
+{q:"Что такое логика персонажа?",a:["Поведение как в реальности","Случайность","Читы"],c:0},
+{q:"Что такое RP ситуация?",a:["Сценарий взаимодействия","Чат","Работа"],c:0},
+{q:"Можно ли игнорировать FearRP?",a:["Нет","Да","Иногда"],c:0},
+{q:"Что такое админ наказание?",a:["Блокировка или варн","Награда","Игнор"],c:0},
+{q:"Что такое честный сервер?",a:["Соблюдение правил","Читы","Баги"],c:0}
+];
+
+// ====== ЛОГИКА ТЕСТА ======
+let test=[],i=0,score=0,player="";
+let time=10,interval;
+let answered=false,locked=false;
+
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+function randomCode(len=6){return Math.random().toString(36).substring(2,len+2).toUpperCase();}
+
+function start(){
+player=document.getElementById("player").value;
+if(!player){alert("Введите ник");return;}
+test=shuffle([...bank]).slice(0,15);
+i=0;score=0;
+next();
+}
+
+function timer(){clearInterval(interval);time=10;answered=false;locked=false;document.getElementById("timer").innerText="⏱ "+time;interval=setInterval(()=>{time--;document.getElementById("timer").innerText="⏱ "+time;if(time<=0 && !answered){answered=true;locked=true;document.getElementById("r").innerText="TIME OUT";document.getElementById("r").className="red";disable();setTimeout(()=>{i++;next();},600);}},1000);}
+
+function next(){if(i>=test.length){finish();return;}let q=test[i];document.getElementById("q").innerText=q.q;let answers=shuffle([...q.a]);let box=document.getElementById("a");box.innerHTML="";answers.forEach(t=>{let b=document.createElement("button");b.innerText=t;b.onclick=()=>check(t,q);box.appendChild(b);});document.getElementById("r").innerText="";timer();}
+
+function disable(){document.querySelectorAll("#a button").forEach(b=>b.disabled=true);}
+function check(ans,q){if(answered||locked)return;answered=true;locked=true;clearInterval(interval);disable();if(ans===q.a[q.c]){score++;document.getElementById("r").innerText="✔ correct";document.getElementById("r").className="green";}else{document.getElementById("r").innerText="✖ wrong";document.getElementById("r").className="red";}setTimeout(()=>{i++;next();},500);}
+
+function finish(){
+clearInterval(interval);
+document.getElementById("q").innerText="RESULT";
+document.getElementById("a").innerHTML="";
+let msg="";if(score<10)msg="❌ не прошёл";else msg="✔ прошёл";
+let code=randomCode();
+document.getElementById("r").innerText=score+"/"+test.length+" "+msg+"\nКод: "+code;
+
+let custom=document.getElementById("customMsg").value.trim();
+let text=`Ник: ${player}\nРезультат: ${score}/${test.length}\nКод: ${code}`;
+if(custom) text+=`\nДополнительно: ${custom}`;
+
+// Отправка в Telegram
+fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`,{
+method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chat_id: TELEGRAM_CHAT_ID, text})
+});
+
+// Сохраняем историю локально
+let h=JSON.parse(localStorage.getItem("history")||"[]");
+h.push({player,score,code,date:new Date().toLocaleString()});
+localStorage.setItem("history",JSON.stringify(h));
+loadHistory();
+}
+
+// ====== ADMIN ======
+function adminLogin(){if(document.getElementById("adminPass").value==="admin7197"){document.getElementById("adminPanel").classList.remove("hidden");loadHistory();}}
+function loadHistory(){let h=JSON.parse(localStorage.getItem("history")||"[]");document.getElementById("history").innerHTML=h.slice().reverse().map(x=>`<p>${x.date} | ${x.player} | ${x.score} | ${x.code}</p>`).join("");}
+function clearAll(){localStorage.removeItem("history");alert("reset");loadHistory();}
+
+</script>
+</body>
+</html>
